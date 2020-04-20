@@ -1,16 +1,32 @@
 package graph
 
-import (
-	"ci.itzana.me/itzaname/sic-xe-asm/assembler/machine"
-)
+import "ci.itzana.me/itzaname/sic-xe-asm/assembler/machine"
 
-type Node struct {
-	Label       string
+type Node interface {
+	Label() string
+	Size() int
+	Valid() bool
+	Get() interface{}
+}
+
+type InstructionNode struct {
+	Name        string
 	Instruction *machine.Instruction
 	Operands    []Operand
 	Flags       machine.Flags
 	*Graph
 }
+
+type DirectiveNode struct {
+	Name      string
+	Directive *machine.Directive
+	Data      interface{}
+	*Graph
+}
+
+///////////////////////////////////////////////////////
+// InstructionNode
+///////////////////////////////////////////////////////
 
 type Operand struct {
 	// 0 Register
@@ -20,19 +36,19 @@ type Operand struct {
 	Data interface{}
 }
 
-func (node *Node) Address() int {
-	count := 0
-	for i := 0; i < len(node.Graph.Nodes); i++ {
-		count += node.Graph.Nodes[i].Size()
-		if &node.Graph.Nodes[i] == node {
-			return count
-		}
-	}
-
-	return -1
+func (node *InstructionNode) Label() string {
+	return node.Name
 }
 
-func (node *Node) Valid() bool {
+func (node *InstructionNode) Size() int {
+	if node.Instruction.Format == 3 && node.Flags.E {
+		return 4
+	}
+
+	return int(node.Instruction.Format)
+}
+
+func (node *InstructionNode) Valid() bool {
 	if node.Graph == nil || node.Instruction == nil {
 		return false
 	}
@@ -55,10 +71,46 @@ func (node *Node) Valid() bool {
 	return false
 }
 
-func (node *Node) Size() int {
-	if node.Instruction.Format == 3 && node.Flags.E {
-		return 4
+func (node *InstructionNode) Get() interface{} {
+	return node
+}
+
+///////////////////////////////////////////////////////
+// DirectiveNode
+///////////////////////////////////////////////////////
+
+func (node *DirectiveNode) Label() string {
+	return node.Name
+}
+
+func (node *DirectiveNode) Size() int {
+	if !node.Directive.Storage {
+		return 0
 	}
 
-	return int(node.Instruction.Format)
+	switch node.Data.(type) {
+	case int: // WORD
+		return 3
+	case byte:
+		return 1
+	case []byte:
+		return len(node.Data.([]byte))
+	}
+
+	return -1
+}
+
+func (node *DirectiveNode) Valid() bool {
+	if node.Directive != nil {
+		if node.Directive.Storage && node.Data == nil {
+			return false
+		}
+		return true
+	}
+
+	return false
+}
+
+func (node *DirectiveNode) Get() interface{} {
+	return node
 }
