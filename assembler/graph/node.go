@@ -1,7 +1,7 @@
 package graph
 
 import (
-	"ci.itzana.me/itzaname/sic-xe-asm/machine"
+	"ci.itzana.me/itzaname/sic-xe-asm/assembler/machine"
 )
 
 type Node struct {
