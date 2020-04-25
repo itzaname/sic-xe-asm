@@ -14,6 +14,7 @@ var directiveList = []Directive{
 	{Name: "RESW", Storage: true},
 	{Name: "START", Storage: false},
 	{Name: "BASE", Storage: false},
+	{Name: "NOBASE", Storage: false},
 	{Name: "END", Storage: false},
 }
 

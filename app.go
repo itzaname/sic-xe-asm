@@ -8,16 +8,14 @@ import (
 
 func main() {
 	g := graph.Graph{Nodes: []graph.Node{
-		{Instruction: &machine.Instruction{Format: 3}},
-		{Instruction: &machine.Instruction{Format: 3}},
-		{Instruction: &machine.Instruction{Format: 3}},
-		{Instruction: &machine.Instruction{Format: 3}},
-		{Instruction: &machine.Instruction{Format: 3}},
-		{Instruction: &machine.Instruction{Format: 3}},
+		graph.Node(&graph.InstructionNode{Instruction: &machine.Instruction{Format: 3}}),
+		graph.Node(&graph.InstructionNode{Instruction: &machine.Instruction{Format: 3}}),
+		graph.Node(&graph.InstructionNode{Instruction: &machine.Instruction{Format: 3}}),
+		graph.Node(&graph.InstructionNode{Instruction: &machine.Instruction{Format: 3}}),
 	}}
 
 	itr := g.Iterator()
 	for itr.Next() {
-		fmt.Println(itr.Index(), itr.Address())
+		fmt.Println(itr.Index(), itr.Address(), itr.Node().Get())
 	}
 }

@@ -14,8 +14,8 @@ func (itr *Iterator) Index() int {
 	return itr.index
 }
 
-func (itr *Iterator) Node() *Node {
-	return &itr.graph.Nodes[itr.index]
+func (itr *Iterator) Node() Node {
+	return itr.graph.Nodes[itr.index-1]
 }
 
 func (itr *Iterator) Next() bool {
