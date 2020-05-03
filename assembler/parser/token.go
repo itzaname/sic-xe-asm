@@ -1,46 +1,6 @@
 package parser
 
-import (
-	"bufio"
-	"log"
-	"os"
-	"strings"
-	"unicode"
-)
-
-type Parser struct {
-	file    *os.File
-	scanner *bufio.Scanner
-}
-
-func New(path string) (Parser, error) {
-	file, err := os.Open(path)
-	if err != nil {
-		return Parser{}, err
-	}
-
-	return Parser{
-		file:    file,
-		scanner: bufio.NewScanner(file),
-	}, nil
-}
-
-func (p *Parser) readLine() (bool, string) {
-	return p.scanner.Scan(), p.scanner.Text()
-}
-
-func (p *Parser) cleanLine(items []string) []string {
-	output := []string{}
-	for i := 0; i < len(items); i++ {
-		oLine := items[i]
-		oLine = strings.TrimSpace(oLine)
-		if len(oLine) > 0 {
-			output = append(output, oLine)
-		}
-	}
-
-	return output
-}
+import "unicode"
 
 // strings.Fields would be the ideal thing to use
 // but since it will remove the spaces it isn't suitable
@@ -60,7 +20,8 @@ func (p *Parser) splitLine(input string) []string {
 	return output
 }
 
-var dataDelimiter = []uint8{0x43, 0x58} // C, X
+var dataDelimiter = []uint8{'C', 'X'}
+
 func (p *Parser) isDataDelimiter(input uint8) bool {
 	for i := 0; i < len(dataDelimiter); i++ {
 		if dataDelimiter[i] == input {
@@ -86,7 +47,7 @@ func (p *Parser) tokenizeLine(input string) ([]string, error) {
 			}
 
 			if len(line[i]) > x+1 {
-				if p.isDataDelimiter(line[i][x]) && line[i][x+1] == 0x27 {
+				if p.isDataDelimiter(line[i][x]) && line[i][x+1] == '\'' {
 					dataMode = true
 					if start < 0 {
 						start = x
@@ -100,7 +61,7 @@ func (p *Parser) tokenizeLine(input string) ([]string, error) {
 			}
 			end = x
 
-			if dataMode && line[i][x] == 0x27 {
+			if dataMode && line[i][x] == '\'' {
 				final := dataBuffer + line[i][start:x+1]
 				tokens = append(tokens, final)
 				dataBuffer = ""
@@ -121,19 +82,4 @@ func (p *Parser) tokenizeLine(input string) ([]string, error) {
 	}
 
 	return tokens, nil
-}
-
-func (p *Parser) Parse() error {
-
-	for {
-		read, line := p.readLine()
-		if !read {
-			break
-		}
-
-		oof, _ := p.tokenizeLine(line)
-		log.Println(len(oof), oof)
-	}
-
-	return nil
 }

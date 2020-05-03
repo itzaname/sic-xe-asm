@@ -9,11 +9,18 @@ type Node interface {
 	Get() interface{}
 }
 
+type DebugData struct {
+	Line   int
+	Tokens int
+	Args   int
+}
+
 type InstructionNode struct {
 	Name        string
 	Instruction *machine.Instruction
 	Operands    []Operand
 	Flags       machine.Flags
+	Debug       DebugData
 	*Graph
 }
 
@@ -21,6 +28,7 @@ type DirectiveNode struct {
 	Name      string
 	Directive *machine.Directive
 	Data      interface{}
+	Debug     DebugData
 	*Graph
 }
 
