@@ -1,6 +1,9 @@
 package parser
 
-import "unicode"
+import (
+	"strings"
+	"unicode"
+)
 
 // strings.Fields would be the ideal thing to use
 // but since it will remove the spaces it isn't suitable
@@ -27,6 +30,15 @@ func (p *Parser) isDataDelimiter(input uint8) bool {
 		if dataDelimiter[i] == input {
 			return true
 		}
+	}
+	return false
+}
+func (p *Parser) isComment(token []string) bool {
+	if len(token) <= 0 {
+		return true
+	}
+	if strings.TrimSpace(token[0])[0] == '.' {
+		return true
 	}
 	return false
 }

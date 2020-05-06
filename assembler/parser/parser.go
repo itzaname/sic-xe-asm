@@ -3,7 +3,7 @@ package parser
 import (
 	"bufio"
 	"ci.itzana.me/itzaname/sic-xe-asm/assembler/parser/graph"
-	"log"
+	"fmt"
 	"os"
 )
 
@@ -20,11 +20,12 @@ func New(path string) (Parser, error) {
 	}
 
 	g := graph.New()
-	return Parser{
+	p := Parser{
 		file:      file,
 		scanner:   bufio.NewScanner(file),
 		nodeGraph: &g,
-	}, nil
+	}
+	return p, p.Parse()
 }
 
 func (p *Parser) Graph() *graph.Graph {
@@ -50,12 +51,25 @@ func (p *Parser) parseScanner() error {
 
 		token, err := p.tokenizeLine(line)
 		if err != nil {
-			return err
+			return fmt.Errorf("line %d: %s", lineNum, err.Error())
+		}
+
+		if p.isComment(token) {
+			lineNum++
+			continue
 		}
 
 		node, err := p.nodeFromToken(token)
 		if err != nil {
-			return err
+			return fmt.Errorf("line %d: %s", lineNum, err.Error())
+		}
+
+		if item, ok := node.(*graph.InstructionNode); ok {
+			item.Debug.Line = lineNum
+		}
+
+		if item, ok := node.(*graph.DirectiveNode); ok {
+			item.Debug.Line = lineNum
 		}
 
 		p.nodeGraph.Append(node)
@@ -63,7 +77,9 @@ func (p *Parser) parseScanner() error {
 		lineNum++
 	}
 
-	log.Println(p.nodeGraph.LinkNodes())
+	if _, err := p.nodeGraph.LinkNodes(); err != nil {
+		return err
+	}
 
 	return nil
 }

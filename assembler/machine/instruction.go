@@ -6,9 +6,10 @@ import (
 )
 
 type Instruction struct {
-	Name   string
-	OpCode uint8
-	Format uint8
+	Name    string
+	OpCode  uint8
+	Format  uint8
+	Special bool
 }
 
 // This was a pain to make
@@ -17,7 +18,7 @@ var insList = []Instruction{
 	{Name: "ADDF", OpCode: 0x58, Format: 3},
 	{Name: "ADDR", OpCode: 0x90, Format: 2},
 	{Name: "AND", OpCode: 0x40, Format: 3},
-	{Name: "CLEAR", OpCode: 0x04, Format: 2},
+	{Name: "CLEAR", OpCode: 0xB4, Format: 2},
 	{Name: "COMP", OpCode: 0x28, Format: 3},
 	{Name: "COMPF", OpCode: 0x88, Format: 3},
 	{Name: "COMPR", OpCode: 0xA0, Format: 2},
@@ -48,7 +49,7 @@ var insList = []Instruction{
 	{Name: "OR", OpCode: 0x44, Format: 3},
 	{Name: "RD", OpCode: 0xD8, Format: 3},
 	{Name: "RMO", OpCode: 0xAC, Format: 2},
-	{Name: "RSUB", OpCode: 0x4C, Format: 3},
+	{Name: "RSUB", OpCode: 0x4C, Format: 3, Special: true},
 	{Name: "SHIFTL", OpCode: 0xA4, Format: 2},
 	{Name: "SHIFTR", OpCode: 0xA8, Format: 2},
 	{Name: "SIO", OpCode: 0xF0, Format: 1},
@@ -93,12 +94,12 @@ func InstructionByOpCode(code uint8) (*Instruction, error) {
 	return nil, fmt.Errorf("invalid opcode value: '0x%X'", code)
 }
 
-func InstructionByName(name string) (*Instruction, bool, error) {
+func InstructionByName(name string) (*Instruction, uint8, error) {
 	name = strings.ToUpper(name)
-	extended := false
+	extended := uint8(0)
 	if name[0] == '+' {
 		name = name[1:]
-		extended = true
+		extended = 1
 	}
 
 	if ins, ok := insNameCache[name]; ok {

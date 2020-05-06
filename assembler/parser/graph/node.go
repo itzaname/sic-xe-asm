@@ -7,12 +7,14 @@ type Node interface {
 	Size() int
 	Valid() bool
 	Get() interface{}
+	Address() int
 }
 
 type DebugData struct {
 	Line   int
 	Tokens int
 	Args   int
+	Source string
 }
 
 type InstructionNode struct {
@@ -21,6 +23,7 @@ type InstructionNode struct {
 	Operands    []Operand
 	Flags       machine.Flags
 	Debug       DebugData
+	Addr        int
 	*Graph
 }
 
@@ -29,6 +32,7 @@ type DirectiveNode struct {
 	Directive *machine.Directive
 	Data      interface{}
 	Debug     DebugData
+	Addr      int
 	*Graph
 }
 
@@ -37,18 +41,24 @@ type DirectiveNode struct {
 ///////////////////////////////////////////////////////
 
 type Storage struct {
-	// 1 - size
-	// 2 - data
+	// 1 - byte
+	// 2 - word
 	Type uint8
+	Size int
 	Data interface{}
 }
 
 type Operand struct {
 	// 0 Register
-	// 1 Node
-	// 2 Immediate
+	// 1 Label
+	// 2 Value
+	// 3 Literal
 	Type uint8
-	Data interface{}
+	// 0 Direct
+	// 1 Indirect
+	// 2 Immediate
+	Addressing uint8
+	Data       interface{}
 }
 
 func (node *InstructionNode) Label() string {
@@ -56,7 +66,7 @@ func (node *InstructionNode) Label() string {
 }
 
 func (node *InstructionNode) Size() int {
-	if node.Instruction.Format == 3 && node.Flags.E {
+	if node.Instruction.Format == 3 && node.Flags.E == 1 {
 		return 4
 	}
 
@@ -90,6 +100,10 @@ func (node *InstructionNode) Get() interface{} {
 	return node
 }
 
+func (node *InstructionNode) Address() int {
+	return node.Addr
+}
+
 ///////////////////////////////////////////////////////
 // DirectiveNode
 ///////////////////////////////////////////////////////
@@ -102,17 +116,10 @@ func (node *DirectiveNode) Size() int {
 	if !node.Directive.Storage {
 		return 0
 	}
-
-	switch node.Data.(type) {
-	case int: // WORD
-		return 3
-	case byte:
-		return 1
-	case []byte:
-		return len(node.Data.([]byte))
+	if store, ok := node.Data.(*Storage); ok {
+		return store.Size
 	}
-
-	return -1
+	return 0
 }
 
 func (node *DirectiveNode) Valid() bool {
@@ -128,4 +135,8 @@ func (node *DirectiveNode) Valid() bool {
 
 func (node *DirectiveNode) Get() interface{} {
 	return node
+}
+
+func (node *DirectiveNode) Address() int {
+	return node.Addr
 }

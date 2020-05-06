@@ -1,10 +1,10 @@
 package machine
 
 type Flags struct {
-	N bool
-	I bool
-	X bool
-	B bool
-	P bool
-	E bool
+	N uint8
+	I uint8
+	X uint8
+	B uint8
+	P uint8
+	E uint8
 }

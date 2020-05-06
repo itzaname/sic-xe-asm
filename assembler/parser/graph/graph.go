@@ -39,6 +39,24 @@ func (graph *Graph) Insert(node Node, i int) error {
 	return nil
 }
 
+func (graph *Graph) UpdateAddr() {
+	addr := 0
+	for i := 0; i < len(graph.Nodes); i++ {
+		if node, ok := graph.Nodes[i].(*InstructionNode); ok {
+			node.Addr = addr
+			graph.Nodes[i] = node
+			addr = addr + graph.Nodes[i].Size()
+			continue
+		}
+		if node, ok := graph.Nodes[i].(*DirectiveNode); ok {
+			node.Addr = addr
+			graph.Nodes[i] = node
+			addr = addr + graph.Nodes[i].Size()
+			continue
+		}
+	}
+}
+
 func (graph *Graph) LinkNodes() (int, error) {
 	counter := 0
 
