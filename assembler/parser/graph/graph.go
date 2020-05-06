@@ -4,11 +4,14 @@ import "fmt"
 
 type Graph struct {
 	Nodes    []Node
-	SymTable []map[string]Node
+	SymTable map[string]*Node
 }
 
 func New() Graph {
-	return Graph{}
+	return Graph{
+		Nodes:    []Node{},
+		SymTable: map[string]*Node{},
+	}
 }
 
 func (graph *Graph) Iterator() Iterator {
@@ -17,6 +20,10 @@ func (graph *Graph) Iterator() Iterator {
 
 func (graph *Graph) Append(node Node) int {
 	graph.Nodes = append(graph.Nodes, node)
+
+	if node.Label() != "" {
+		graph.SymTable[node.Label()] = &graph.Nodes[len(graph.Nodes)-1]
+	}
 	return len(graph.Nodes)
 }
 
@@ -30,4 +37,26 @@ func (graph *Graph) Insert(node Node, i int) error {
 	graph.Nodes = append(graph.Nodes, tmp...)
 
 	return nil
+}
+
+func (graph *Graph) LinkNodes() (int, error) {
+	counter := 0
+
+	for i := 0; i < len(graph.Nodes); i++ {
+		if val, ok := graph.Nodes[i].(*InstructionNode); ok {
+			for x := 0; x < len(val.Operands); x++ {
+				if val.Operands[x].Type == 1 {
+					if node, ok := graph.SymTable[val.Operands[x].Data.(string)]; ok {
+						val.Operands[x].Data = node
+						graph.Nodes[i] = val
+						counter++
+					} else {
+						return counter, fmt.Errorf("unresolved symbol '%s'", val.Operands[x].Data.(string))
+					}
+				}
+			}
+		}
+	}
+
+	return counter, nil
 }

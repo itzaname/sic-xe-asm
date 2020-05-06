@@ -43,16 +43,18 @@ func (p *Parser) instructionFromToken(token []string) (*graph.InstructionNode, e
 	baseSize := 0
 
 	// Read label and instruction
-	if ins, err := machine.InstructionByName(strings.ToUpper(token[0])); err == nil {
+	if ins, extended, err := machine.InstructionByName(strings.ToUpper(token[0])); err == nil {
 		node.Instruction = ins
+		node.Flags.E = extended
 		baseSize = 1
 	} else {
-		ins, err := machine.InstructionByName(strings.ToUpper(token[1]))
+		ins, extended, err := machine.InstructionByName(strings.ToUpper(token[1]))
 		if err != nil {
 			return nil, err
 		}
 		node.Name = token[0]
 		node.Instruction = ins
+		node.Flags.E = extended
 		baseSize = 2
 	}
 
@@ -111,32 +113,74 @@ func (p *Parser) instructionFromToken(token []string) (*graph.InstructionNode, e
 	return &node, nil
 }
 
-func (p *Parser) directiveFromToken(token []string) (*graph.InstructionNode, error) {
-	return nil, nil
+func (p *Parser) readStorageItem(directive *machine.Directive, data string) (*graph.Storage, error) {
+	switch directive.Name {
+	case "RESB":
+	case "RESW":
+		dataInput, err := p.readArrayStorageInput(data)
+		if err != nil {
+			return nil, err
+		}
+
+		switch dataInput.(type) {
+		case string:
+			return &graph.Storage{
+				Type: 2,
+				Data: dataInput,
+			}, nil
+		case int:
+			return &graph.Storage{
+				Type: 1,
+				Data: dataInput,
+			}, nil
+		}
+	case "WORD":
+
+	case "BYTE":
+	default:
+		return nil, fmt.Errorf("non storage directive '%s'", directive.Name)
+	}
+
+	return nil, fmt.Errorf("non storage directive '%s'", directive.Name)
+}
+
+func (p *Parser) directiveFromToken(token []string) (*graph.DirectiveNode, error) {
+	if len(token) < 3 {
+		return nil, fmt.Errorf("expected 3 tokens got %d", len(token))
+	}
+
+	node := graph.DirectiveNode{}
+	node.Name = token[0]
+
+	directive, err := machine.DirectiveByName(token[1])
+	if err != nil {
+		return nil, err
+	}
+	node.Directive = directive
+
+	if directive.Storage {
+		item, err := p.readStorageItem(directive, token[2])
+		if err != nil {
+			return nil, err
+		}
+		node.Data = item
+		return &node, nil
+	}
+
+	return &node, nil
 }
 
 func (p *Parser) nodeFromToken(token []string) (graph.Node, error) {
 	if len(token) >= 1 {
-		item := token[0]
-		if item[0] == '+' {
-			item = item[1:]
-		}
-		if _, err := machine.InstructionByName(strings.ToUpper(item)); err == nil {
+		if _, _, err := machine.InstructionByName(strings.ToUpper(token[0])); err == nil {
 			return p.instructionFromToken(token)
-		}
-		if _, err := machine.DirectiveByName(strings.ToUpper(item)); err == nil {
-			return p.directiveFromToken(token)
 		}
 	}
 	if len(token) >= 2 {
-		item := token[1]
-		if item[0] == '+' {
-			item = item[1:]
-		}
-		if _, err := machine.InstructionByName(strings.ToUpper(item)); err == nil {
+		if _, _, err := machine.InstructionByName(strings.ToUpper(token[1])); err == nil {
 			return p.instructionFromToken(token)
 		}
-		if _, err := machine.DirectiveByName(strings.ToUpper(item)); err == nil {
+		if _, err := machine.DirectiveByName(strings.ToUpper(token[1])); err == nil {
 			return p.directiveFromToken(token)
 		}
 	}

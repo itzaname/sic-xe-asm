@@ -93,20 +93,25 @@ func InstructionByOpCode(code uint8) (*Instruction, error) {
 	return nil, fmt.Errorf("invalid opcode value: '0x%X'", code)
 }
 
-func InstructionByName(name string) (*Instruction, error) {
+func InstructionByName(name string) (*Instruction, bool, error) {
 	name = strings.ToUpper(name)
+	extended := false
+	if name[0] == '+' {
+		name = name[1:]
+		extended = true
+	}
 
 	if ins, ok := insNameCache[name]; ok {
-		return ins, nil
+		return ins, extended, nil
 	}
 
 	for i := 0; i < len(insList); i++ {
 		if insList[i].Name == name {
 			insCodeCache[insList[i].OpCode] = &insList[i]
 			insNameCache[insList[i].Name] = &insList[i]
-			return &insList[i], nil
+			return &insList[i], extended, nil
 		}
 	}
 
-	return nil, fmt.Errorf("invalid opcode name: '%s'", name)
+	return nil, extended, fmt.Errorf("invalid opcode name: '%s'", name)
 }

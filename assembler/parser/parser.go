@@ -19,9 +19,11 @@ func New(path string) (Parser, error) {
 		return Parser{}, err
 	}
 
+	g := graph.New()
 	return Parser{
-		file:    file,
-		scanner: bufio.NewScanner(file),
+		file:      file,
+		scanner:   bufio.NewScanner(file),
+		nodeGraph: &g,
 	}, nil
 }
 
@@ -51,11 +53,17 @@ func (p *Parser) parseScanner() error {
 			return err
 		}
 
-		log.Println(token)
-		log.Println(p.nodeFromToken(token))
+		node, err := p.nodeFromToken(token)
+		if err != nil {
+			return err
+		}
+
+		p.nodeGraph.Append(node)
 
 		lineNum++
 	}
+
+	log.Println(p.nodeGraph.LinkNodes())
 
 	return nil
 }

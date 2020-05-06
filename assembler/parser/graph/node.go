@@ -36,6 +36,13 @@ type DirectiveNode struct {
 // InstructionNode
 ///////////////////////////////////////////////////////
 
+type Storage struct {
+	// 1 - size
+	// 2 - data
+	Type uint8
+	Data interface{}
+}
+
 type Operand struct {
 	// 0 Register
 	// 1 Node
