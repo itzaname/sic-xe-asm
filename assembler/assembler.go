@@ -35,10 +35,12 @@ func GetObject(file string) (string, error) {
 		graph: p.Graph(),
 	}
 
+	// Generate object code items
 	if err := asm.generateObjectItems(); err != nil {
 		return "", err
 	}
 
+	// Write the generated headers out to the string buffer
 	asm.obj.Header.Length = asm.obj.Text[len(asm.obj.Text)-1].Length + asm.obj.Text[len(asm.obj.Text)-1].Start
 	buffer := ""
 	buffer = buffer + asm.obj.Header.String() + "\n"

@@ -18,6 +18,7 @@ var directiveList = []Directive{
 	{Name: "NOBASE", Storage: false},
 	{Name: "END", Storage: false, Resolved: true},
 	{Name: "LTORG", Storage: false},
+	{Name: "EQU", Storage: false},
 }
 
 func DirectiveByName(name string) (*Directive, error) {
