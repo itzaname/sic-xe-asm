@@ -121,7 +121,7 @@ func (asm *Assembler) generateObjectItems() error {
 				return fmt.Errorf("line %d: failed to write buffer: %s", node.Debug.Line, err.Error())
 			}
 			bufferSize = bufferSize + n
-			fmt.Printf("%.6X: %20s    ->   %10s %20s", node.Address(), node.Debug.Source, strings.ToUpper(hex.EncodeToString(data)), fmt.Sprintln(node.Flags))
+			fmt.Printf("%.6X: %20s    ->   %10s", node.Address(), node.Debug.Source, strings.ToUpper(hex.EncodeToString(data)))
 			break
 		default:
 			return fmt.Errorf("invalid node '#%d' at 0x%X", iter.Index(), iter.Address())
