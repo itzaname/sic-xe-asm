@@ -61,6 +61,17 @@ func (graph *Graph) LinkNodes() (int, error) {
 	counter := 0
 
 	for i := 0; i < len(graph.Nodes); i++ {
+		if val, ok := graph.Nodes[i].(*DirectiveNode); ok {
+			if val.Directive.Resolved {
+				if node, ok := graph.SymTable[val.Data.(string)]; ok {
+					val.Data = node
+					graph.Nodes[i] = val
+					counter++
+				} else {
+					return counter, fmt.Errorf("unresolved symbol '%s'", val.Data.(string))
+				}
+			}
+		}
 		if val, ok := graph.Nodes[i].(*InstructionNode); ok {
 			for x := 0; x < len(val.Operands); x++ {
 				if val.Operands[x].Type == 1 {

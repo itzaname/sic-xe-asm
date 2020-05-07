@@ -19,11 +19,32 @@ func calcPCDisp(pc, target int) (int, bool) {
 	return disp, true
 }
 
+func calcBaseDisp(base, target int) (int, bool) {
+	disp := target - base
+	if disp > 0xFFF {
+		return 0, false
+	}
+	if disp < 0 {
+		return 0, false
+	}
+	return disp, true
+}
+
+func fixOpcode(code uint8) uint8 {
+	return (code & 0xFF) >> 2
+}
+
 func (asm *Assembler) extendedInstruction(node *graph.InstructionNode) ([]byte, error) {
 	buffer := bytes.Buffer{}
 	writer := bitio.NewWriter(&buffer)
 
 	if len(node.Operands) < 1 {
+		if node.Instruction.Special {
+			writer.WriteBits(uint64(fixOpcode(node.Instruction.OpCode)), 6)
+			writer.WriteBits(0, 18)
+			writer.Close()
+			return buffer.Bytes(), nil
+		}
 		return nil, fmt.Errorf("need at least 1 operand for format 3 instruction")
 	}
 
@@ -36,7 +57,7 @@ func (asm *Assembler) extendedInstruction(node *graph.InstructionNode) ([]byte, 
 	}
 
 	// Write opcode
-	writer.WriteBits(uint64(node.Instruction.OpCode), 6)
+	writer.WriteBits(uint64(fixOpcode(node.Instruction.OpCode)), 6)
 
 	var value int
 	// Set value and basic addressing
@@ -96,9 +117,20 @@ func (asm *Assembler) extendedInstruction(node *graph.InstructionNode) ([]byte, 
 		if ok {
 			value = disp
 			node.Flags.P = 1
+		} else if disp, ok := calcBaseDisp(asm.flags.baseAddr, value); ok {
+			value = disp
+			node.Flags.B = 1
 		} else {
-			return nil, fmt.Errorf("NEED BASE")
+			return nil, fmt.Errorf("0x%X out of range", value)
 		}
+	}
+
+	// Create a relocation entry
+	if node.Flags.E == 1 && node.Operands[0].Type == 1 {
+		asm.obj.Modifications = append(asm.obj.Modifications, machine.ModificationRecord{
+			Address: node.Address() + 2,
+			Length:  5, // Extended
+		})
 	}
 
 	if err := writer.WriteBits(uint64(node.Flags.N), 1); err != nil {

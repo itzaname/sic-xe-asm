@@ -119,7 +119,7 @@ func (p *Parser) readStorageItem(directive *machine.Directive, data string) (*gr
 		}
 		return &graph.Storage{
 			Type: 2,
-			Size: val,
+			Size: val * 3,
 			Data: nil,
 		}, nil
 	case "WORD":
@@ -127,7 +127,7 @@ func (p *Parser) readStorageItem(directive *machine.Directive, data string) (*gr
 		if val, err := strconv.Atoi(data); err == nil {
 			return &graph.Storage{
 				Type: 2,
-				Size: 1,
+				Size: 3,
 				Data: val,
 			}, nil
 		}
@@ -167,6 +167,11 @@ func (p *Parser) directiveFromToken(token []string) (*graph.DirectiveNode, error
 
 	if directive, err := machine.DirectiveByName(token[0]); err == nil {
 		node.Directive = directive
+		if len(token) == 1 {
+			node.Debug.Source = strings.Join(token[:1], " ")
+			node.Debug.Tokens = len(node.Debug.Source)
+			return &node, nil
+		}
 		node.Data = token[1]
 		node.Debug.Source = strings.Join(token[:2], " ")
 		node.Debug.Tokens = len(node.Debug.Source)

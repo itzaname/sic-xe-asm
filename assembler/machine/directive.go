@@ -3,8 +3,9 @@ package machine
 import "fmt"
 
 type Directive struct {
-	Name    string
-	Storage bool
+	Name     string
+	Storage  bool
+	Resolved bool
 }
 
 var directiveList = []Directive{
@@ -13,9 +14,10 @@ var directiveList = []Directive{
 	{Name: "RESB", Storage: true},
 	{Name: "RESW", Storage: true},
 	{Name: "START", Storage: false},
-	{Name: "BASE", Storage: false},
+	{Name: "BASE", Storage: false, Resolved: true},
 	{Name: "NOBASE", Storage: false},
-	{Name: "END", Storage: false},
+	{Name: "END", Storage: false, Resolved: true},
+	{Name: "LTORG", Storage: false},
 }
 
 func DirectiveByName(name string) (*Directive, error) {

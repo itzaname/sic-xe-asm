@@ -20,7 +20,9 @@ type ObjectFile struct {
 }
 
 type asmFlags struct {
-	base bool
+	base      bool
+	baseAddr  int
+	endModule bool
 }
 
 func GetObject(file string) (string, error) {
@@ -37,5 +39,16 @@ func GetObject(file string) (string, error) {
 		return "", err
 	}
 
-	return "", nil
+	asm.obj.Header.Length = asm.obj.Text[len(asm.obj.Text)-1].Length + asm.obj.Text[len(asm.obj.Text)-1].Start
+	buffer := ""
+	buffer = buffer + asm.obj.Header.String() + "\n"
+	for i := 0; i < len(asm.obj.Text); i++ {
+		buffer = buffer + asm.obj.Text[i].String() + "\n"
+	}
+	for i := 0; i < len(asm.obj.Modifications); i++ {
+		buffer = buffer + asm.obj.Modifications[i].String() + "\n"
+	}
+	buffer = buffer + asm.obj.End.String() + "\n"
+
+	return buffer, nil
 }

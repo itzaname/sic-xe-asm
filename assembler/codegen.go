@@ -65,26 +65,69 @@ func (asm *Assembler) instructionBytes(node *graph.InstructionNode) ([]byte, err
 
 func (asm *Assembler) generateObjectItems() error {
 	asm.graph.UpdateAddr()
+
+	startAddr := -1
+	buffer := bytes.Buffer{}
+	bufferSize := 0
+
+	writeTextRecord := func() {
+		if bufferSize == 0 {
+			return
+		}
+		asm.obj.Text = append(asm.obj.Text, machine.TextRecord{
+			Start:  startAddr,
+			Length: bufferSize,
+			Object: strings.ToUpper(hex.EncodeToString(buffer.Bytes())),
+		})
+		buffer.Reset()
+		startAddr = -1
+		bufferSize = 0
+		asm.flags.endModule = false
+	}
+
 	iter := asm.graph.Iterator()
 	for iter.Next() {
+		if bufferSize >= 28 || asm.flags.endModule {
+			writeTextRecord()
+		}
 		switch iter.Node().(type) {
 		case *graph.DirectiveNode:
 			node := iter.Node().(*graph.DirectiveNode)
-			fmt.Println("ITEM:", node.Address(), node.Debug.Source)
+			data, write, err := asm.handleDirective(node)
+			if err != nil {
+				return fmt.Errorf("line %d: %s", node.Debug.Line, err.Error())
+			}
+			if write {
+				n, err := buffer.Write(data)
+				if err != nil {
+					return fmt.Errorf("line %d: failed to write buffer: %s", node.Debug.Line, err.Error())
+				}
+				bufferSize = bufferSize + n
+			}
+			fmt.Printf("%.6X: %20s\n", node.Address(), node.Debug.Source)
 			break
 		case *graph.InstructionNode:
 			node := iter.Node().(*graph.InstructionNode)
+			if startAddr < 0 {
+				startAddr = node.Address()
+			}
 			data, err := asm.instructionBytes(node)
 			if err != nil {
-				return err
+				return fmt.Errorf("line %d: %s", node.Debug.Line, err.Error())
 			}
-			fmt.Println("ITEM:", node.Address(), node.Debug.Source, strings.ToUpper(hex.EncodeToString(data)), "FLAGS", node.Flags)
-
+			n, err := buffer.Write(data)
+			if err != nil {
+				return fmt.Errorf("line %d: failed to write buffer: %s", node.Debug.Line, err.Error())
+			}
+			bufferSize = bufferSize + n
+			fmt.Printf("%.6X: %20s    ->   %10s %20s", node.Address(), node.Debug.Source, strings.ToUpper(hex.EncodeToString(data)), fmt.Sprintln(node.Flags))
 			break
 		default:
 			return fmt.Errorf("invalid node '#%d' at 0x%X", iter.Index(), iter.Address())
 		}
 	}
+
+	writeTextRecord()
 
 	return nil
 }

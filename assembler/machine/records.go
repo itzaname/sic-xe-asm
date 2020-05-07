@@ -3,13 +3,18 @@ package machine
 import "fmt"
 
 type HeaderRecord struct {
-	Name       string
-	EntryPoint int
-	Length     int
+	Name        string
+	BaseAddress int
+	Length      int
 }
 
 func (hr *HeaderRecord) String() string {
-	return "H" + fmt.Sprint("%6s", hr.Name) + fmt.Sprintf("%.6X", hr.EntryPoint) + fmt.Sprintf("%.6X", hr.Length)
+	name := hr.Name
+	nameLen := len(name)
+	for i := nameLen; i < 6; i++ {
+		name = name + " "
+	}
+	return "H" + name + fmt.Sprintf("%.6X", hr.BaseAddress) + fmt.Sprintf("%.6X", hr.Length)
 }
 
 type TextRecord struct {
