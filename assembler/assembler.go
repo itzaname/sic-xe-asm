@@ -4,6 +4,8 @@ import (
 	"ci.itzana.me/itzaname/sic-xe-asm/assembler/machine"
 	"ci.itzana.me/itzaname/sic-xe-asm/assembler/parser"
 	"ci.itzana.me/itzaname/sic-xe-asm/assembler/parser/graph"
+	"io"
+	"os"
 )
 
 type Assembler struct {
@@ -25,8 +27,8 @@ type asmFlags struct {
 	endModule bool
 }
 
-func GetObject(file string) (string, error) {
-	p, err := parser.New(file)
+func GetObject(reader io.Reader) (string, error) {
+	p, err := parser.New(reader)
 	if err != nil {
 		return "", err
 	}
@@ -53,4 +55,12 @@ func GetObject(file string) (string, error) {
 	buffer = buffer + asm.obj.End.String() + "\n"
 
 	return buffer, nil
+}
+
+func GetObjectFile(file string) (string, error) {
+	f, err := os.Open(file)
+	if err != nil {
+		return "", err
+	}
+	return GetObject(f)
 }

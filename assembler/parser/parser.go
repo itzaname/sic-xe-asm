@@ -4,25 +4,28 @@ import (
 	"bufio"
 	"ci.itzana.me/itzaname/sic-xe-asm/assembler/parser/graph"
 	"fmt"
+	"io"
 	"os"
 )
 
 type Parser struct {
 	nodeGraph *graph.Graph
-	file      *os.File
 	scanner   *bufio.Scanner
 }
 
-func New(path string) (Parser, error) {
+func NewFile(path string) (Parser, error) {
 	file, err := os.Open(path)
 	if err != nil {
 		return Parser{}, err
 	}
 
+	return New(file)
+}
+
+func New(reader io.Reader) (Parser, error) {
 	g := graph.New()
 	p := Parser{
-		file:      file,
-		scanner:   bufio.NewScanner(file),
+		scanner:   bufio.NewScanner(reader),
 		nodeGraph: &g,
 	}
 	return p, p.Parse()
