@@ -12,13 +12,13 @@ import (
 
 func (asm *Assembler) instructionBytes(node *graph.InstructionNode) ([]byte, error) {
 	switch node.Instruction.Format {
-	case 1:
+	case 1: // Basic format 1
 		buffer := bytes.Buffer{}
 		writer := bitio.NewWriter(&buffer)
 		err := writer.WriteByte(node.Instruction.OpCode)
 		writer.Close()
 		return buffer.Bytes(), err
-	case 2:
+	case 2: // Register funcs
 		buffer := bytes.Buffer{}
 		writer := bitio.NewWriter(&buffer)
 		defer writer.Close()
@@ -64,12 +64,12 @@ func (asm *Assembler) instructionBytes(node *graph.InstructionNode) ([]byte, err
 }
 
 func (asm *Assembler) generateObjectItems() error {
-	asm.graph.UpdateAddr()
-
 	startAddr := -1
 	buffer := bytes.Buffer{}
 	bufferSize := 0
 
+	// Helper function to avoid having the code in the loop
+	// manages the creation of text records
 	writeTextRecord := func() {
 		if bufferSize == 0 {
 			return
@@ -87,11 +87,12 @@ func (asm *Assembler) generateObjectItems() error {
 
 	iter := asm.graph.Iterator()
 	for iter.Next() {
+		// 28 bytes is 56 columns
 		if bufferSize >= 28 || asm.flags.endModule {
 			writeTextRecord()
 		}
 		switch iter.Node().(type) {
-		case *graph.DirectiveNode:
+		case *graph.DirectiveNode: // Directive code gen
 			node := iter.Node().(*graph.DirectiveNode)
 			data, write, err := asm.handleDirective(node)
 			if err != nil {
@@ -106,7 +107,7 @@ func (asm *Assembler) generateObjectItems() error {
 			}
 			fmt.Printf("%.6X: %20s\n", node.Address(), node.Debug.Source)
 			break
-		case *graph.InstructionNode:
+		case *graph.InstructionNode: // Instruction code gen
 			node := iter.Node().(*graph.InstructionNode)
 			if startAddr < 0 {
 				startAddr = node.Address()

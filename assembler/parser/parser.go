@@ -49,6 +49,7 @@ func (p *Parser) parseScanner() error {
 			break
 		}
 
+		// Generate a string array of the line
 		token, err := p.tokenizeLine(line)
 		if err != nil {
 			return fmt.Errorf("line %d: %s", lineNum, err.Error())
@@ -59,15 +60,16 @@ func (p *Parser) parseScanner() error {
 			continue
 		}
 
+		// Create graph node
 		node, err := p.nodeFromToken(token)
 		if err != nil {
 			return fmt.Errorf("line %d: %s", lineNum, err.Error())
 		}
 
+		// Manually set needed debug info
 		if item, ok := node.(*graph.InstructionNode); ok {
 			item.Debug.Line = lineNum
 		}
-
 		if item, ok := node.(*graph.DirectiveNode); ok {
 			item.Debug.Line = lineNum
 		}
@@ -77,9 +79,16 @@ func (p *Parser) parseScanner() error {
 		lineNum++
 	}
 
+	_, err := p.nodeGraph.ResolveLiterals()
+	if err != nil {
+		return err
+	}
+
 	if _, err := p.nodeGraph.LinkNodes(); err != nil {
 		return err
 	}
+
+	p.nodeGraph.UpdateAddr()
 
 	return nil
 }

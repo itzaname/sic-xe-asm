@@ -25,13 +25,11 @@ func (dir *directiveManager) Start(node *graph.DirectiveNode) ([]byte, bool, err
 	}
 	dir.Assembler.obj.Header.BaseAddress = addr
 
-	fmt.Println()
-
 	return nil, false, nil
 }
 
 func (dir *directiveManager) Base(node *graph.DirectiveNode) ([]byte, bool, error) {
-	target := *node.Data.(*graph.Node)
+	target := node.Data.(graph.Node)
 	dir.flags.base = true
 	dir.flags.baseAddr = target.Address()
 	return nil, false, nil
@@ -67,15 +65,18 @@ func (dir *directiveManager) ResW(node *graph.DirectiveNode) ([]byte, bool, erro
 
 func (dir *directiveManager) End(node *graph.DirectiveNode) ([]byte, bool, error) {
 	if node.Data != nil {
-		target := *node.Data.(*graph.Node)
+		target := node.Data.(graph.Node)
 		dir.obj.End.Start = target.Address()
 	}
 	return nil, false, nil
 }
 
+func (dir *directiveManager) Null(node *graph.DirectiveNode) ([]byte, bool, error) {
+	return nil, false, nil
+}
+
 func (asm *Assembler) handleDirective(node *graph.DirectiveNode) ([]byte, bool, error) {
 	if dirFuncMap == nil {
-		fmt.Println("AYY")
 		dirManager := directiveManager{asm}
 		dirFuncMap = map[string]func(node *graph.DirectiveNode) ([]byte, bool, error){}
 
@@ -88,6 +89,8 @@ func (asm *Assembler) handleDirective(node *graph.DirectiveNode) ([]byte, bool, 
 		dirFuncMap["RESB"] = dirManager.ResB
 		dirFuncMap["RESW"] = dirManager.ResW
 		dirFuncMap["END"] = dirManager.End
+		dirFuncMap["LTORG"] = dirManager.Null
+		dirFuncMap["EQU"] = dirManager.Null
 	}
 
 	if f, ok := dirFuncMap[node.Directive.Name]; ok {

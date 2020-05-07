@@ -39,9 +39,11 @@ func (asm *Assembler) extendedInstruction(node *graph.InstructionNode) ([]byte, 
 	writer := bitio.NewWriter(&buffer)
 
 	if len(node.Operands) < 1 {
+		// RSUB seems to be the only opcode which takes no arguments
 		if node.Instruction.Special {
 			writer.WriteBits(uint64(fixOpcode(node.Instruction.OpCode)), 6)
-			writer.WriteBits(0, 18)
+			writer.WriteBits(0x30, 6)
+			writer.WriteBits(0, 12)
 			writer.Close()
 			return buffer.Bytes(), nil
 		}
@@ -63,9 +65,8 @@ func (asm *Assembler) extendedInstruction(node *graph.InstructionNode) ([]byte, 
 	// Set value and basic addressing
 	switch node.Operands[0].Type {
 	case 1:
-		if target, ok := node.Operands[0].Data.(*graph.Node); ok {
-			tmp := *target
-			value = tmp.Address()
+		if target, ok := node.Operands[0].Data.(graph.Node); ok {
+			value = target.Address()
 			switch node.Operands[0].Addressing {
 			case 0: // Direct op m
 				node.Flags.N = 1
@@ -92,7 +93,7 @@ func (asm *Assembler) extendedInstruction(node *graph.InstructionNode) ([]byte, 
 		}
 		return nil, fmt.Errorf("invalid node at line #%d at address 0x%X", node.Debug.Line, node.Address())
 	default:
-		return nil, fmt.Errorf("unknow adressing mode for format 3 type '%d' line #%d", node.Operands[0].Type, node.Debug.Line)
+		return nil, fmt.Errorf("unkown adressing mode for format 3 type '%d' line #%d", node.Operands[0].Type, node.Debug.Line)
 	}
 
 	// Set X flag if needed
@@ -117,7 +118,7 @@ func (asm *Assembler) extendedInstruction(node *graph.InstructionNode) ([]byte, 
 		if ok {
 			value = disp
 			node.Flags.P = 1
-		} else if disp, ok := calcBaseDisp(asm.flags.baseAddr, value); ok {
+		} else if disp, ok := calcBaseDisp(asm.flags.baseAddr, value); ok { // Do base and pray
 			value = disp
 			node.Flags.B = 1
 		} else {
@@ -133,6 +134,7 @@ func (asm *Assembler) extendedInstruction(node *graph.InstructionNode) ([]byte, 
 		})
 	}
 
+	// Flags
 	if err := writer.WriteBits(uint64(node.Flags.N), 1); err != nil {
 		return nil, err
 	}
@@ -152,6 +154,7 @@ func (asm *Assembler) extendedInstruction(node *graph.InstructionNode) ([]byte, 
 		return nil, err
 	}
 
+	// Disp
 	if err := writer.WriteBits(uint64(value), uint8(formatSize)); err != nil {
 		return nil, err
 	}

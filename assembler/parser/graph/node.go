@@ -1,6 +1,10 @@
 package graph
 
-import "ci.itzana.me/itzaname/sic-xe-asm/assembler/machine"
+import (
+	"ci.itzana.me/itzaname/sic-xe-asm/assembler/machine"
+	"fmt"
+	"strconv"
+)
 
 type Node interface {
 	Label() string
@@ -138,5 +142,42 @@ func (node *DirectiveNode) Get() interface{} {
 }
 
 func (node *DirectiveNode) Address() int {
+	// This is a hack and I hate it
+	if node.Directive.Name == "EQU" {
+		readSingle := func(item string) int {
+			// If requesting our address
+			if item == "*" {
+				return node.Addr
+			}
+			// Arg is number
+			if val, err := strconv.Atoi(item); err == nil {
+				return val
+			}
+			// Is another label
+			if val, ok := node.SymTable[item]; ok {
+				return val.Address()
+			}
+
+			panic(fmt.Sprintln("FAILED TO RESOLVE EQU EXPRESSION", item))
+		}
+		args := node.Data.([]string)
+		if len(args) == 1 {
+			return readSingle(args[0])
+		} else {
+			opr1 := readSingle(args[0])
+			opr2 := readSingle(args[2])
+
+			switch args[1] {
+			case "+":
+				return opr1 + opr2
+			case "-":
+				return opr1 - opr2
+			case "/":
+				return opr1 / opr2
+			}
+		}
+
+		panic(fmt.Sprintln("FAILED TO RESOLVE EQU EXPRESSION", args))
+	}
 	return node.Addr
 }
